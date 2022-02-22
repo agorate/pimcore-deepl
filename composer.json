@@ -1,0 +1,45 @@
+{
+    "name": "agorate/pimcore-deepl",
+    "type": "pimcore-bundle",
+    "license": "GPL-3.0-or-later",
+    "description": "With this Bundle you can translate your documents via DeepL Interface",
+    "keywords": [
+        "pimcore",
+        "pimcore-plugin",
+        "marketplace",
+        "e-commerce",
+        "translation",
+        "deepL",
+        "agorate"
+    ],
+    "homepage": "https://www.agorate.de",
+    "authors": [
+        {
+            "name": "agorate GmbH",
+            "homepage": "https://www.agorate.de",
+            "email": "info@agorate.de",
+            "role": "Developer"
+        },
+        {
+            "name": "Thomas Drews",
+            "email": "t.drews@agorate.de",
+            "homepage": "https://www.agorate.de",
+            "role": "Developer"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Agorate\\PimcoreDeeplBundle\\": "src/PimcoreDeeplBundle"
+        }
+    },
+    "require": {
+        "pimcore/pimcore": "^10.0"
+    },
+    "extra": {
+        "pimcore": {
+            "bundles": [
+                "Agorate\\PimcoreDeeplBundle\\PimcoreDeeplBundle"
+            ]
+        }
+    }
+}

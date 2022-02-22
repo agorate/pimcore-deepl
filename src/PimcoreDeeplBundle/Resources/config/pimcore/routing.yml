@@ -1,0 +1,4 @@
+deepl_translate_document:
+    methods: [ "POST" ]
+    path: /admin/deeplTranslateDocument
+    controller: Agorate\PimcoreDeeplBundle\Controller\DefaultController::deeplTranslateDocument
