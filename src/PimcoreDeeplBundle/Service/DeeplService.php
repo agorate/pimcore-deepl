@@ -10,19 +10,19 @@
 
 namespace Agorate\PimcoreDeeplBundle\Service;
 
-use Pimcore\Model\WebsiteSetting;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class DeeplService
 {
     private HttpClientInterface $httpClient;
 
-    public function __construct()
+    public function __construct(private ContainerInterface $container)
     {
         $this->httpClient = HttpClient::create();
     }

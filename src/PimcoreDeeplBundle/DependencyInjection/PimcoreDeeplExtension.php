@@ -31,7 +31,9 @@ class PimcoreDeeplExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        $container->setParameter("pimcore_deepl", $config["deepl_auth_key"]);
+        if (array_key_exists("deepl_auth_key", $config)) {
+            $container->setParameter("pimcore_deepl", $config['deepl_auth_key']);
+        }
 
         $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $loader->load('services.yml');
