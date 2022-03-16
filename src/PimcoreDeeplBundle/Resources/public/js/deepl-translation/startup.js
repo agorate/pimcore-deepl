@@ -119,7 +119,6 @@ pimcore.plugin.deeplTranslate = Class.create(pimcore.plugin.admin, {
 
         win.show();
     },
-
     postOpenDocument: function (document, type) {
         if (type !== 'page') {
             return; // Do not show if selected element is not a page
@@ -128,15 +127,22 @@ pimcore.plugin.deeplTranslate = Class.create(pimcore.plugin.admin, {
             return; // Do not show translation in root path. Should not be translatable
         }
 
-        let menuParent = document.toolbar.items.items[9].btnInnerEl.component.menu.items.items[0].menu;
+        let menuParent = document.toolbar.items.items
 
-        menuParent.add({
-            text: t('Deepl Translation'),
-            iconCls: 'pimcore_material_icon_translation',
-            scale: 'small',
-            handler: this.createTranslation.bind(this, document),
-        });
+        // Check if Translation button exists and append to it
+        for (let i = 0;menuParent.length; i++) {
+            if (menuParent[i].config.tooltip === 'Translation' ) {
+                menuParent[i].btnInnerEl.component.menu.items.items[0].menu.add({
+                    text: t('Deepl Translation'),
+                    iconCls: 'pimcore_material_icon_translation',
+                    scale: 'small',
+                    handler: this.createTranslation.bind(this, document),
+                });
+                break;
+            }
+        }
     }
+
 });
 
 var deeplTranslatePlugin = new pimcore.plugin.deeplTranslate();
