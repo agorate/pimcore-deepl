@@ -130,17 +130,16 @@ pimcore.plugin.deeplTranslate = Class.create(pimcore.plugin.admin, {
         let menuParent = document.toolbar.items.items
 
         // Check if Translation button exists and append to it
-        for (let i = 0;menuParent.length; i++) {
-            if (menuParent[i].config.tooltip === 'Translation' ) {
-                menuParent[i].btnInnerEl.component.menu.items.items[0].menu.add({
+        menuParent.forEach(function(menu){
+            if (menu.config.iconCls === 'pimcore_material_icon_translation pimcore_material_icon') {
+                menu.btnInnerEl.component.menu.items.items[0].menu.add({
                     text: t('Deepl Translation'),
                     iconCls: 'pimcore_material_icon_translation',
                     scale: 'small',
                     handler: this.createTranslation.bind(this, document),
                 });
-                break;
             }
-        }
+        }.bind(this));
     }
 
 });
