@@ -28,6 +28,11 @@ class DefaultController extends FrontendController
         'articleTitle'
     ];
 
+    const TRANSLATABLE_MODEL_KEYS = [
+        'Title',
+        'Description'
+    ];
+
     public function __construct(private Document\Service $documentService,
                                 private DeeplService $deeplService,
                                 private Db\ConnectionInterface $db)
@@ -121,6 +126,24 @@ class DefaultController extends FrontendController
             $newDocumentProperties[] = ['data' => $this->deeplService->translate($newDocumentProperty, $targetLanguage), 'name'=>$property];
         }
         $this->updateTranslatedProperties($newDocument, $newDocumentProperties);
+
+        $saveDocument = false;
+        foreach (self::TRANSLATABLE_MODEL_KEYS as $modelKey) {
+            $modelKeyData = $document->{'get'.$modelKey}();
+            if ($modelKeyData === '') {
+                continue;
+            }
+            $saveDocument = true;
+
+            $translatedModelKeyData = $this->deeplService->translate($modelKeyData, $targetLanguage);
+
+            $newDocument->{'set'.$modelKey}($translatedModelKeyData);
+        }
+
+        if ($saveDocument) {
+            $newDocument->save();
+        }
+
         $this->documentService->addTranslation($document, $newDocument, $targetLanguage);
 
         return $this->json([
