@@ -14,10 +14,12 @@ use Agorate\PimcoreDeeplBundle\Service\DeeplService;
 use Exception;
 use Pimcore\Controller\FrontendController;
 use Pimcore\Model\Document;
+use Pimcore\Model\Document\Editable\Input;
+use Pimcore\Model\Document\Editable\Textarea;
+use Pimcore\Model\Document\Editable\Wysiwyg;
 use Pimcore\Model\Element\ValidationException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Pimcore\Db;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 class DefaultController extends FrontendController
@@ -34,8 +36,7 @@ class DefaultController extends FrontendController
     ];
 
     public function __construct(private Document\Service $documentService,
-                                private DeeplService $deeplService,
-                                private Db\ConnectionInterface $db)
+                                private DeeplService     $deeplService)
     {
     }
 
@@ -102,7 +103,7 @@ class DefaultController extends FrontendController
 
         try {
             $newDocument->save();
-        } catch (ValidationException | Exception) {
+        } catch (ValidationException|Exception) {
             $newDocument->delete();
             return $this->json([
                 'success' => false,
@@ -110,39 +111,36 @@ class DefaultController extends FrontendController
             ]);
         }
 
-        $elements = $this->getTranslatableDocumentElements($newDocument);
+        $elements = $newDocument->getEditables();
+
         foreach ($elements as &$element) {
-            $element['data'] = $this->deeplService->translate($element['data'], $targetLanguage);
-        }
-
-        $this->updateTranslatedElements($elements);
-
-        $newDocumentProperties = [];
-        foreach (self::TRANSLATABLE_PROPERTIES as $property) {
-            $newDocumentProperty = $newDocument->getProperty($property);
-            if ($newDocumentProperty === '') {
+            if (!in_array(get_class($element), [Input::class, Textarea::class, Wysiwyg::class])) {
                 continue;
             }
-            $newDocumentProperties[] = ['data' => $this->deeplService->translate($newDocumentProperty, $targetLanguage), 'name'=>$property];
+            /** @var Input|Textarea|Wysiwyg */
+            $element->setDataFromResource($this->deeplService->translate($element->getData(), $targetLanguage));
         }
-        $this->updateTranslatedProperties($newDocument, $newDocumentProperties);
 
-        $saveDocument = false;
+        foreach (self::TRANSLATABLE_PROPERTIES as $property) {
+            $newDocumentProperty = $newDocument->getProperty($property);
+            if (!is_string($newDocumentProperty) || $newDocumentProperty === '') {
+                continue;
+            }
+            $newDocument->setProperty($property, "text", $this->deeplService->translate($newDocumentProperty, $targetLanguage));
+        }
+
         foreach (self::TRANSLATABLE_MODEL_KEYS as $modelKey) {
-            $modelKeyData = $document->{'get'.$modelKey}();
+            $modelKeyData = $document->{'get' . $modelKey}();
             if ($modelKeyData === '') {
                 continue;
             }
-            $saveDocument = true;
 
             $translatedModelKeyData = $this->deeplService->translate($modelKeyData, $targetLanguage);
 
-            $newDocument->{'set'.$modelKey}($translatedModelKeyData);
+            $newDocument->{'set' . $modelKey}($translatedModelKeyData);
         }
 
-        if ($saveDocument) {
-            $newDocument->save();
-        }
+        $newDocument->save();
 
         $this->documentService->addTranslation($document, $newDocument, $targetLanguage);
 
@@ -153,65 +151,4 @@ class DefaultController extends FrontendController
             'key' => $newDocument->getKey()
         ]);
     }
-
-    /**
-     * @param Document $document
-     * @return array
-     * @throws \Doctrine\DBAL\Exception
-     * @throws \Doctrine\DBAL\Driver\Exception
-     */
-    private function getTranslatableDocumentElements(Document $document): array
-    {
-        $qb = $this->db->createQueryBuilder();
-        $qb->select('*')
-            ->from('documents_editables', 'de')
-            ->where("de.documentId = :documentId")
-            ->andWhere($qb->expr()->or(
-                $qb->expr()->eq('de.type', $qb->expr()->literal('input')),
-                $qb->expr()->eq('de.type', $qb->expr()->literal('textarea')),
-                $qb->expr()->eq('de.type', $qb->expr()->literal('wysiwyg'))
-            ))
-            ->setParameter("documentId", $document->getId());
-
-        return $qb->execute()->fetchAllAssociative();
-    }
-
-    /**
-     * @param $elements
-     * @throws \Doctrine\DBAL\Exception
-     */
-    private function updateTranslatedElements($elements): void
-    {
-        $db = Db::get();
-        foreach ($elements as $element) {
-            $identifier = [
-                'documentId' => $element['documentId'],
-                'name' => $element['name'],
-                'type' => $element['type']
-            ];
-            $db->update('documents_editables', ['data' => $element['data']], $identifier);
-        }
-    }
-
-    /**
-     * @param Document $document
-     * @param array $properties
-     * @throws \Doctrine\DBAL\Exception
-     */
-    private function updateTranslatedProperties(Document $document, array $properties): void
-    {
-        $db = Db::get();
-        foreach ($properties as $property) {
-            $identifier = [
-                'cid' => $document->getId(),
-                'ctype' => 'document',
-                'type' => 'text',
-                'name' => $property['name']
-            ];
-
-            $db->update('properties', ['data' => $property['data']], $identifier);
-        }
-    }
-
-
 }
