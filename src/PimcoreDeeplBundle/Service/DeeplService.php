@@ -10,21 +10,20 @@
 
 namespace Agorate\PimcoreDeeplBundle\Service;
 
-use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class DeeplService
 {
-    private HttpClientInterface $httpClient;
-
-    public function __construct(private ContainerInterface $container)
+    public function __construct(
+        private ParameterBagInterface $parameterBag,
+        private HttpClientInterface   $httpClient
+    )
     {
-        $this->httpClient = HttpClient::create();
     }
 
     /**
@@ -39,13 +38,15 @@ class DeeplService
             return null;
         }
 
-        $authKey = $this->container->getParameter('pimcore_deepl');
+        $authKey = $this->parameterBag->get('pimcore_deepl');
 
         $response = $this->httpClient->request('POST', "https://api.deepl.com/v2/translate", [
             'body' => [
-                'auth_key' => $authKey,
                 'text' => $text,
                 'target_lang' => substr($targetLocale, 0, 2)
+            ],
+            'headers' => [
+                'Authorization' => 'DeepL-Auth-Key ' . $authKey,
             ]
         ]);
 
